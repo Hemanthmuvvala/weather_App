@@ -14,9 +14,10 @@ class weather_home_screen extends StatefulWidget {
 }
 
 class WeatherHomeScreenState extends State<weather_home_screen> {
+  late Future<Map<String, dynamic>> weather;
   Future<Map<String, dynamic>> getCurrentWeather() async {
     try {
-      String cityName = 'bhimavaram';
+      String cityName = 'mumbai';
       final res = await http.get(Uri.parse(
           'http://api.openweathermap.org/data/2.5/forecast?q=$cityName&APPID=$weatherAPIKey'));
       final data = jsonDecode(res.body);
@@ -30,81 +31,90 @@ class WeatherHomeScreenState extends State<weather_home_screen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    weather = getCurrentWeather();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-  backgroundColor: const Color.fromARGB(255, 121, 192, 225),
-  title: Stack(
-    children: [
-      Align(
-        alignment: Alignment.centerLeft,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
+        backgroundColor: const Color.fromARGB(255, 121, 192, 225),
+        title: Stack(
           children: [
-          const  Padding(
-              padding:  EdgeInsets.fromLTRB(0, 16, 0, 1),
-              child:  Icon(Icons.location_on, color: Color.fromARGB(255, 213, 14, 14), size: 24),
-            ),
-            const SizedBox(width: 5),
-            FutureBuilder<Map<String, dynamic>>(
-              future: getCurrentWeather(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Text("Loading...", style: TextStyle(fontSize: 16, color: Colors.white));
-                }
-                if (snapshot.hasError) {
-                  return const Text("Error", style: TextStyle(fontSize: 16, color: Colors.white));
-                }
-
-                final cityName = snapshot.data!['city']['name']; 
-
-                return Padding(
-                  padding: const EdgeInsets.fromLTRB(0, 21, 0, 0),
-                  child: Align(
-                    child: Text(
-                      cityName,
-                      style: const TextStyle(
-                        color: Color.fromARGB(255, 0, 0, 0),
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(0, 16, 0, 1),
+                    child: Icon(Icons.location_on,
+                        color: Color.fromARGB(255, 213, 14, 14), size: 24),
                   ),
-                );
-              },
+                  const SizedBox(width: 5),
+                  FutureBuilder<Map<String, dynamic>>(
+                    future: getCurrentWeather(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Text("Loading...",
+                            style:
+                                TextStyle(fontSize: 16, color: Colors.white));
+                      }
+                      if (snapshot.hasError) {
+                        return const Text("Error",
+                            style:
+                                TextStyle(fontSize: 16, color: Colors.white));
+                      }
+
+                      final cityName = snapshot.data!['city']['name'];
+
+                      return Padding(
+                        padding: const EdgeInsets.fromLTRB(0, 21, 0, 0),
+                        child: Align(
+                          child: Text(
+                            cityName,
+                            style: const TextStyle(
+                              color: Color.fromARGB(255, 0, 0, 0),
+                              fontSize: 17,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(50, 1, 0, 1),
+              child: Align(
+                alignment: Alignment.center,
+                child: Text(
+                  "Weather",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
             ),
           ],
         ),
-      ),
-     const Padding(
-        padding:  EdgeInsets.fromLTRB(50, 1, 0, 1),
-        child:  Align(
-          alignment: Alignment.center,
-          child: Text(
-            "Weather",
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
-            ),
+        actions: [
+          IconButton(
+            onPressed: () {
+              setState(() {});
+            },
+            icon: const Icon(Icons.refresh, color: Colors.white),
           ),
-        ),
+        ],
       ),
-    ],
-  ),
-  actions: [
-    IconButton(
-      onPressed: () {}, 
-      icon: const Icon(Icons.refresh, color: Colors.white),
-    ),
-  ],
-),
-
-
-
-      
       body: FutureBuilder(
-        future: getCurrentWeather(),
+        future: weather,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator.adaptive());
@@ -126,7 +136,6 @@ class WeatherHomeScreenState extends State<weather_home_screen> {
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
-                
                 SizedBox(
                   width: double.infinity,
                   child: Card(
@@ -148,11 +157,48 @@ class WeatherHomeScreenState extends State<weather_home_screen> {
                                       fontWeight: FontWeight.bold)),
                               const SizedBox(height: 15),
                               Icon(
-                                currentSky == 'Clouds' || currentSky == 'Rain'
-                                    ? Icons.cloud
-                                    : Icons.sunny,
+                                (() {
+                                  if (currentSky.toLowerCase() == 'Clear') {
+                                    return Icons.sunny;
+                                  } else if (currentSky.toLowerCase() ==
+                                      'Clouds') {
+                                    return Icons.wb_cloudy;
+                                  } else if (currentSky.toLowerCase() ==
+                                      'rain') {
+                                    return Icons.grain;
+                                  } else if (currentSky.toLowerCase() ==
+                                      'thunderstorm') {
+                                    return Icons.flash_on;
+                                  } else if (currentSky.toLowerCase() ==
+                                      'snow') {
+                                    return Icons.ac_unit;
+                                  } else {
+                                    return Icons.sunny;
+                                  }
+                                })(),
                                 size: 65,
-                                color:currentSky == 'Clouds' || currentSky == 'Rain'? const Color.fromARGB(255, 164, 207, 243):Colors.amber,
+                                color: (() {
+                                  if (currentSky.toLowerCase() == 'Clear') {
+                                    return const Color.fromARGB(
+                                        255, 243, 200, 9);
+                                  } else if (currentSky.toLowerCase() ==
+                                      'Clouds') {
+                                    return const Color.fromARGB(
+                                        255, 164, 207, 243);
+                                  } else if (currentSky.toLowerCase() ==
+                                      'rain') {
+                                    return Colors.blue;
+                                  } else if (currentSky.toLowerCase() ==
+                                      'thunderstorm') {
+                                    return Colors.deepPurple;
+                                  } else if (currentSky.toLowerCase() ==
+                                      'snow') {
+                                    return Colors.white;
+                                  } else {
+                                    return const Color.fromARGB(
+                                        255, 243, 200, 9);// Default color
+                                  }
+                                })(),
                               ),
                               const SizedBox(height: 15),
                               Text(currentSky,
@@ -177,7 +223,7 @@ class WeatherHomeScreenState extends State<weather_home_screen> {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      for (int i = 0; i <6; i++)
+                      for (int i = 0; i < 6; i++)
                         hourly_Forecast(
                           time: data['list'][i + 1]
                               ['dt_txt'], // Extract the time
@@ -191,7 +237,7 @@ class WeatherHomeScreenState extends State<weather_home_screen> {
                                       'Clouds' ||
                                   data['list'][i + 1]['weather'][0]['main'] ==
                                       'Rain'
-                              ?const Color.fromARGB(255, 164, 207, 243)
+                              ? const Color.fromARGB(255, 164, 207, 243)
                               : Colors
                                   .amber, // Amber for sunny, white otherwise
                           temperature:
